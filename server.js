@@ -11,13 +11,15 @@ app.use(cors()); // Habilitar CORS para todas las rutas
 app.use(express.json()); // Para parsear JSON en las solicitudes
 app.use(express.static('public'));
 
-// Configuración de la conexión a MySQL
-const db = mysql.createConnection({
-    host: 'localhost',        // O la IP de tu servidor MySQL
-    user: 'root', // Reemplaza con tu usuario de MySQL
-    password: '', // Reemplaza con tu contraseña
-    database: 'lista_tareas_db'
-});
+// Configuración de la conexión a MySQL usando variables de entorno
+const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',          // Usa la variable de entorno DB_HOST, o 'localhost' como valor por defecto
+    user: process.env.DB_USER || 'root',              // Usa la variable de entorno DB_USER, o 'root' como valor por defecto
+    password: process.env.DB_PASSWORD || '',          // Usa la variable de entorno DB_PASSWORD, o una cadena vacía como valor por defecto
+    database: process.env.DB_NAME || 'lista_tareas_db' // Usa la variable de entorno DB_NAME, o 'lista_tareas_db' como valor por defecto
+};
+
+const db = mysql.createConnection(dbConfig);
 
 // Conectar a MySQL
 db.connect(err => {
