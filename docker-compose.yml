@@ -1,0 +1,45 @@
+# docker-compose.yml
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=mysql_db
+      - DB_USER=todouser
+      - DB_PASSWORD=todopassword
+      - DB_NAME=lista_tareas_db
+      - NODE_ENV=development
+    depends_on:
+      mysql_db:
+        condition: service_healthy # <--- Este es clave
+    networks:
+      - app-network
+
+  mysql_db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: lista_tareas_db
+      MYSQL_USER: todouser
+      MYSQL_PASSWORD: todopassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
+      timeout: 20s
+      retries: 10
+      interval: 10s # Agregado
+      start_period: 30s # Agregado
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
