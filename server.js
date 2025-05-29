@@ -13,27 +13,74 @@ app.use(express.static('public'));
 
 // Configuración de la conexión a MySQL usando variables de entorno
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',          // Usa la variable de entorno DB_HOST, o 'localhost' como valor por defecto
-    user: process.env.DB_USER || 'root',              // Usa la variable de entorno DB_USER, o 'root' como valor por defecto
-    password: process.env.DB_PASSWORD || '',          // Usa la variable de entorno DB_PASSWORD, o una cadena vacía como valor por defecto
-    database: process.env.DB_NAME || 'lista_tareas_db' // Usa la variable de entorno DB_NAME, o 'lista_tareas_db' como valor por defecto
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'lista_tareas_db',
+    waitForConnections: true, // Esto es bueno para pools de conexiones, pero no para createConnection
+    connectionLimit: 10 // Si usas un pool de conexiones, útil
 };
 
-const db = mysql.createConnection(dbConfig);
+// --- MODIFICACIÓN IMPORTANTE AQUÍ: Lógica de reintentos para la conexión ---
+let db; // Declara la conexión aquí para que sea accesible globalmente
+const MAX_RETRIES = 10;
+let retries = 0;
 
-// Conectar a MySQL
-db.connect(err => {
-    if (err) {
-        console.error('Error al conectar a MySQL:', err);
-        return;
-    }
-    console.log('Conectado a la base de datos MySQL.');
-});
+function connectWithRetries() {
+    console.log(`Intentando conectar a MySQL... (Intento ${retries + 1} de ${MAX_RETRIES})`);
+    db = mysql.createConnection(dbConfig); // Crea una nueva conexión en cada intento
+
+    db.connect(err => {
+        if (err) {
+            console.error('Error al conectar a MySQL:', err.message); // Usar err.message para un error más conciso
+            if (retries < MAX_RETRIES) {
+                retries++;
+                // Espera antes de reintentar (aumenta el tiempo exponencialmente o fijo)
+                setTimeout(connectWithRetries, 5000 * retries); // Espera 5, 10, 15... segundos
+            } else {
+                console.error('Número máximo de reintentos de conexión a MySQL alcanzado. Saliendo...');
+                process.exit(1); // Sale de la aplicación si no puede conectar
+            }
+            return;
+        }
+        console.log('Conectado a la base de datos MySQL.');
+        retries = 0; // Reinicia el contador de reintentos si la conexión fue exitosa
+
+        // Iniciar el servidor Express solo después de una conexión exitosa a la DB
+        app.listen(port, () => {
+            console.log(`Servidor escuchando en http://localhost:${port}`);
+        });
+    });
+
+    // Manejar errores de conexión después de la conexión inicial (por si se pierde)
+    db.on('error', err => {
+        console.error('Error en la conexión a MySQL después de establecerse:', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNREFUSED') {
+            console.log('Reconectando a la base de datos...');
+            retries = 0; // Reinicia reintentos para intentar una reconexión
+            connectWithRetries();
+        } else {
+            throw err; // Otros errores, lanzar para que la app los maneje o falle
+        }
+    });
+}
+
+// Inicia el proceso de conexión con reintentos
+connectWithRetries();
+
+// --- FIN DE MODIFICACIÓN IMPORTANTE ---
+
 
 // RUTAS DE LA API
 
 // Obtener todas las tareas
 app.get('/api/tareas', (req, res) => {
+    // Asegurarse de que la conexión esté activa antes de hacer la consulta
+    if (!db || db.state === 'disconnected') {
+        console.error('Conexión a la base de datos no establecida o cerrada.');
+        return res.status(500).json({ error: 'Conexión a la base de datos no disponible.' });
+    }
+
     const sql = 'SELECT * FROM tareas ORDER BY fecha_creacion DESC';
     db.query(sql, (err, results) => {
         if (err) {
@@ -46,6 +93,12 @@ app.get('/api/tareas', (req, res) => {
 
 // Agregar una nueva tarea
 app.post('/api/tareas', (req, res) => {
+    // Asegurarse de que la conexión esté activa antes de hacer la consulta
+    if (!db || db.state === 'disconnected') {
+        console.error('Conexión a la base de datos no establecida o cerrada.');
+        return res.status(500).json({ error: 'Conexión a la base de datos no disponible.' });
+    }
+
     const { descripcion } = req.body;
     if (!descripcion) {
         return res.status(400).json({ error: 'La descripción es requerida' });
@@ -62,6 +115,12 @@ app.post('/api/tareas', (req, res) => {
 
 // Actualizar una tarea (marcar como completada/incompleta)
 app.put('/api/tareas/:id', (req, res) => {
+    // Asegurarse de que la conexión esté activa antes de hacer la consulta
+    if (!db || db.state === 'disconnected') {
+        console.error('Conexión a la base de datos no establecida o cerrada.');
+        return res.status(500).json({ error: 'Conexión a la base de datos no disponible.' });
+    }
+
     const { id } = req.params;
     const { completada } = req.body;
 
@@ -84,10 +143,16 @@ app.put('/api/tareas/:id', (req, res) => {
 
 // Eliminar una tarea
 app.delete('/api/tareas/:id', (req, res) => {
-    const { id } = req.params;
-    console.log(`[BACKEND] Solicitud DELETE para ID: ${id}`); // <--- Agrega este log
+    // Asegurarse de que la conexión esté activa antes de hacer la consulta
+    if (!db || db.state === 'disconnected') {
+        console.error('Conexión a la base de datos no establecida o cerrada.');
+        return res.status(500).json({ error: 'Conexión a la base de datos no disponible.' });
+    }
 
-    if (!id || isNaN(parseInt(id))) { // <-- Añade una validación básica para el ID
+    const { id } = req.params;
+    console.log(`[BACKEND] Solicitud DELETE para ID: ${id}`);
+
+    if (!id || isNaN(parseInt(id))) {
         console.error('[BACKEND] ID de tarea inválido o faltante:', id);
         return res.status(400).json({ error: 'ID de tarea inválido o faltante' });
     }
@@ -95,19 +160,16 @@ app.delete('/api/tareas/:id', (req, res) => {
     const sql = 'DELETE FROM tareas WHERE id = ?';
     db.query(sql, [id], (err, result) => {
         if (err) {
-            console.error('[BACKEND] Error en DB al eliminar tarea:', err); // <--- Agrega log de error
+            console.error('[BACKEND] Error en DB al eliminar tarea:', err);
             return res.status(500).json({ error: 'Error interno del servidor al eliminar tarea', details: err.message });
         }
         if (result.affectedRows === 0) {
-            console.log(`[BACKEND] Tarea no encontrada para eliminar con ID: ${id}`); // <--- Agrega log
+            console.log(`[BACKEND] Tarea no encontrada para eliminar con ID: ${id}`);
             return res.status(404).json({ error: 'Tarea no encontrada' });
         }
-        console.log(`[BACKEND] Tarea eliminada correctamente ID: ${id}`); // <--- Agrega log
+        console.log(`[BACKEND] Tarea eliminada correctamente ID: ${id}`);
         res.json({ message: 'Tarea eliminada correctamente' });
     });
 });
 
-// Iniciar el servidor
-app.listen(port, () => {
-    console.log(`Servidor escuchando en http://localhost:${port}`);
-});
+// (Se ha movido app.listen() dentro de connectWithRetries() para que solo se inicie si la DB se conecta)

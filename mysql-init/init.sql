@@ -13,5 +13,5 @@ CREATE TABLE IF NOT EXISTS tareas (
 );
 
 -- Opcional: Puedes añadir algunas tareas de ejemplo si quieres que aparezcan al iniciar la DB.
--- INSERT INTO tareas (descripcion) VALUES ('Comprar pan');
--- INSERT INTO tareas (descripcion, completada) VALUES ('Hacer ejercicio', TRUE);
+INSERT INTO tareas (descripcion) VALUES ('Comprar pan');
+INSERT INTO tareas (descripcion, completada) VALUES ('Hacer ejercicio', TRUE);

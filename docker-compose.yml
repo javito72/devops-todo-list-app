@@ -1,43 +1,44 @@
 # docker-compose.yml
-version: '3.8'
-
 services:
   app:
-    build: . # Construye la imagen a partir del Dockerfile en el directorio actual
+    build: .
     ports:
-      - "3000:3000" # Mapea el puerto 3000 del host al 3000 del contenedor
+      - "3000:3000"
     environment:
-      - DB_HOST=mysql_db # Nombre del servicio de la base de datos
+      - DB_HOST=mysql_db
       - DB_USER=todouser
       - DB_PASSWORD=todopassword
       - DB_NAME=lista_tareas_db
-      - NODE_ENV=development # O production
+      - NODE_ENV=development
     depends_on:
-      - mysql_db # La app depende de que la base de datos esté lista
+      mysql_db:
+        condition: service_healthy # <--- Este es clave
     networks:
       - app-network
 
   mysql_db:
-    image: mysql:8.0 # Usa la imagen oficial de MySQL
+    image: mysql:8.0
     ports:
-      - "3307:3306" # Opcional: Mapea 3306 del contenedor a 3307 del host para acceso externo
+      - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword # Contraseña para el usuario root de MySQL
-      MYSQL_DATABASE: lista_tareas_db # Crea esta base de datos al iniciar
-      MYSQL_USER: todouser # Crea este usuario
-      MYSQL_PASSWORD: todopassword # Contraseña para el nuevo usuario
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: lista_tareas_db
+      MYSQL_USER: todouser
+      MYSQL_PASSWORD: todopassword
     volumes:
-      - mysql_data:/var/lib/mysql # Persiste los datos de MySQL
+      - mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
     networks:
       - app-network
-    healthcheck: # Para asegurar que la DB esté lista antes que la app intente conectar (opcional pero recomendado)
+    healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
       timeout: 20s
       retries: 10
+      interval: 10s # Agregado
+      start_period: 30s # Agregado
 
 volumes:
-  mysql_data: # Define el volumen para persistencia de datos
+  mysql_data:
 
 networks:
   app-network:
