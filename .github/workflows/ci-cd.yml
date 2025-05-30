@@ -1,0 +1,117 @@
+# .github/workflows/ci-cd.yml
+name: CI/CD Pipeline To-Do App
+
+# Disparadores del workflow
+on:
+  push: # Se ejecuta en cada push
+    branches:
+      - main     # Para la rama principal
+      - develop  # Para la rama de desarrollo
+  pull_request: # También se ejecuta en pull requests a estas ramas (para validar antes de fusionar)
+    branches:
+      - main
+      - develop
+
+jobs:
+  # ---- JOB 1: Construir la App y Ejecutar Pruebas ----
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest # Usar la última versión estable de Ubuntu como runner
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4 # Acción para clonar tu repositorio en el runner
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Usa la misma versión de Node.js que en tu Dockerfile y localmente
+          cache: 'npm' # Habilitar caché para las dependencias de npm
+
+      - name: Instalar dependencias
+        run: npm ci # 'ci' es generalmente más rápido y seguro para CI que 'install'
+
+      - name: Ejecutar Pruebas
+        run: npm test # Ejecuta el script de test definido en tu package.json
+        env: # Puedes definir variables de entorno aquí si tus tests las necesitan
+          NODE_ENV: test
+          # DB_HOST, DB_USER, etc. no son necesarios aquí porque tus tests están mockeando la DB
+
+  # ---- JOB 2: Construir y Empujar Imagen Docker ----
+  build-and-push-docker:
+    name: Build and Push Docker Image
+    needs: build-and-test # Este job solo se ejecuta si 'build-and-test' fue exitoso
+    if: github.event_name == 'push' # Solo ejecutar en un push directo (no en PRs, aunque podrías cambiarlo)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3 # Necesario para construir imágenes eficientemente
+
+      - name: Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Descomenta y usa esta sección si prefieres GitHub Container Registry (GHCR)
+      # - name: Login to GitHub Container Registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }} # Tu nombre de usuario/organización de GitHub
+      #     password: ${{ secrets.GITHUB_TOKEN }} # Token automático provisto por GitHub Actions
+
+      - name: Extraer metadatos de Docker (etiquetas, etc.)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: | # Reemplaza 'tu_usuario_dockerhub' con tu DOCKERHUB_USERNAME
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-todo-app
+            # Para GHCR (reemplaza 'tu_usuario_github' con github.repository_owner):
+            # ghcr.io/${{ github.repository_owner }}/devops-todo-app
+          tags: |
+            type=sha # Etiqueta con el hash corto del commit (ej. :c1b2d3e)
+            type=ref,event=branch # Etiqueta con el nombre de la rama (ej. :main, :develop)
+            type=raw,value=latest,enable={{is_default_branch}} # Etiqueta como 'latest' solo si es la rama principal (main)
+
+      - name: Construir y empujar imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Contexto de build (raíz del proyecto)
+          file: ./Dockerfile # Ruta a tu Dockerfile
+          push: true # Empujar la imagen después de construirla
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha # Habilitar caché de layers de Docker con GitHub Actions
+          cache-to: type=gha,mode=max
+
+  # ---- JOB 3: Desplegar a Producción/Staging (Ejemplo con Render) ----
+  deploy-to-render:
+    name: Deploy to Render
+    needs: build-and-push-docker # Depende de que la imagen Docker se haya subido
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Solo en push a la rama 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Desencadenar despliegue en Render (usando Deploy Hook)
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }} # Necesitarás crear este secreto
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL no está configurado. Saltando despliegue."
+            exit 0 # Salir sin error si no hay hook
+          fi
+          curl -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Solicitud de despliegue enviada a Render."
+
+    # Nota sobre el despliegue a Render:
+    # La forma más sencilla suele ser configurar Render para que "Auto-Deploy"
+    # cuando detecte una nueva imagen en tu Container Registry (Docker Hub o GHCR)
+    # con una etiqueta específica (ej. 'latest'). Si haces eso, este job 'deploy-to-render'
+    # podría no ser necesario, o solo serviría para una notificación.
+    # El uso de "Deploy Hooks" (como en el ejemplo) es otra opción si quieres un control más explícito.
+    # Un "Deploy Hook" es una URL única que Render te da; al hacer un POST a esa URL, Render inicia un despliegue.

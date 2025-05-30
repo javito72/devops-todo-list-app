@@ -1,18 +1,20 @@
-# docker-compose.yml
+# docker-compose.yml (Modificado para usar variables de entorno)
 services:
   app:
     build: .
     ports:
       - "3000:3000"
     environment:
+      # Las variables de entorno de la app ahora se toman del entorno del host
+      # (o de GitHub Actions cuando corra el workflow)
       - DB_HOST=mysql_db
       - DB_USER=todouser
-      - DB_PASSWORD=todopassword
+      - DB_PASSWORD=${DB_PASSWORD} # <-- ¡MODIFICADO! Usará la variable de entorno
       - DB_NAME=lista_tareas_db
       - NODE_ENV=development
     depends_on:
       mysql_db:
-        condition: service_healthy # <--- Este es clave
+        condition: service_healthy
     networks:
       - app-network
 
@@ -21,10 +23,12 @@ services:
     ports:
       - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      # Las contraseñas de MySQL ahora se toman del entorno del host
+      # (o de GitHub Actions cuando corra el workflow)
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # <-- ¡MODIFICADO!
       MYSQL_DATABASE: lista_tareas_db
       MYSQL_USER: todouser
-      MYSQL_PASSWORD: todopassword
+      MYSQL_PASSWORD: ${DB_PASSWORD} # <-- ¡MODIFICADO! (reutiliza el mismo secreto)
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
@@ -34,8 +38,8 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
       timeout: 20s
       retries: 10
-      interval: 10s # Agregado
-      start_period: 30s # Agregado
+      interval: 10s
+      start_period: 30s
 
 volumes:
   mysql_data:
