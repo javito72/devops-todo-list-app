@@ -1,30 +1,27 @@
-**📝 Aplicación de Lista de Tareas Dockerizada**
 # 📝 Aplicación de Lista de Tareas Dockerizada
 Esta es una aplicación sencilla de lista de tareas ("Todo App") que permite añadir, marcar como completadas/pendientes y eliminar tareas. La aplicación está construida con un frontend en HTML/CSS/JavaScript puro y un backend en Node.js (Express) que interactúa con una base de datos MySQL. Toda la aplicación está completamente dockerizada para facilitar su despliegue y ejecución en cualquier entorno.
 
-**🚀 Tecnologías Utilizadas**
+## 🚀 Tecnologías Utilizadas
 * **Frontend:** HTML, CSS, JavaScript
 * **Backend:** Node.js, Express.js
 * **Base de Datos:** MySQL
 * **Contenerización:** Docker, Docker Compose
 
-
-**✨ Características**
+## ✨ Características
 * Interfaz de usuario simple e intuitiva.
 * Funcionalidades CRUD (Crear, Leer, Actualizar, Eliminar) para tareas.
 * Persistencia de datos en base de datos MySQL.
 * Configuración de conexión a la base de datos robusta con lógica de reintentos.
 * Entorno de desarrollo y producción consistente gracias a Docker.
 
-
-**📋 Requisitos**
+## 📋 Requisitos
 Antes de intentar ejecutar esta aplicación, asegúrate de tener instalado lo siguiente en tu sistema:
 * **Git:** Para clonar el repositorio.
    * Descargar Git
 * **Docker Desktop** (para Windows o macOS) o **Docker Engine/Daemon** (para Linux): Incluye Docker Compose, necesario para levantar los servicios.
    * Descargar Docker Desktop
 
-**🏃‍♀️ Cómo Ponerlo en Marcha**
+## 🏃‍♀️ Cómo Ponerlo en Marcha
 **¡Importante!** Docker Desktop tiene que estar en funcionamiento antes de construir y levantar los contenedores docker.
 Sigue estos pasos para clonar y ejecutar la aplicación en tu máquina local:
 
@@ -60,21 +57,21 @@ docker-compose up -d --build
 `http://localhost:3000`
 ¡Deberías ver la aplicación de lista de tareas funcionando!
 
-**🛑 Detener la Aplicación**
+## 🛑 Detener la Aplicación
 Cuando hayas terminado de usar la aplicación y quieras detener los contenedores, simplemente regresa a la terminal en el directorio raíz del proyecto y ejecuta:
 
 ```
 docker-compose down
 ```
 
-**☁️ Despliegue de la Aplicación**
+## ☁️ Despliegue de la Aplicación
 
 La aplicación Lista de Tareas (Todo List App) está desplegada en la nube utilizando las siguientes plataformas:
 
-**Servicio de Base de Datos: Aiven (MySQL)**
+### Servicio de Base de Datos: Aiven (MySQL)
 La base de datos MySQL está gestionada y alojada en Aiven, proporcionando un entorno robusto y escalable para los datos de la aplicación.
 
-**Aplicación Web (Frontend y API Backend): Render**
+### Aplicación Web (Frontend y API Backend): Render
 El frontend (interfaz de usuario) y la API de backend (Node.js/Express) están alojados como un único servicio web en Render.
 
-**Acceso a la Aplicación:** https://devops-todo-list-app.onrender.com/
+### Acceso a la Aplicación: https://devops-todo-list-app.onrender.com/
