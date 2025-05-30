@@ -89,9 +89,14 @@ docker-compose down -v
 Precaución: Usar -v eliminará permanentemente los datos de tu base de datos MySQL, ¡así que úsalo solo si quieres empezar con una base de datos completamente limpia!
 
 
-## DEPLOY
-Base de datos en Aiven
 
-Aplicación Web en Render:
-https://devops-todo-list-app.onrender.com/
+## Despliegue de la Aplicación
+
+La aplicación **Lista de Tareas (Todo List App)** está desplegada en la nube utilizando las siguientes plataformas:
+
+* **Servicio de Base de Datos:** [Aiven (MySQL)](https://aiven.io/)
+    * La base de datos MySQL está gestionada y alojada en Aiven, proporcionando un entorno robusto y escalable para los datos de la aplicación.
+* **Aplicación Web (Frontend y API Backend):** [Render](https://render.com/)
+    * El frontend (interfaz de usuario) y la API de backend (Node.js/Express) están alojados como un único servicio web en Render.
+    * **Acceso a la Aplicación:** [https://devops-todo-list-app.onrender.com/](https://devops-todo-list-app.onrender.com/)
 
