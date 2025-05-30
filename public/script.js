@@ -4,13 +4,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const agregarTareaBtn = document.getElementById('agregar-tarea-btn');
     const listaTareasUl = document.getElementById('lista-tareas');
 
-    const API_URL = 'http://localhost:3000/api/tareas'; // Asegúrate que el puerto coincida con tu backend
+    // CAMBIO IMPORTANTE AQUÍ: Usa una ruta relativa
+    const API_BASE_PATH = '/api/tareas'; // Solo la ruta base sin host ni puerto
 
     // --- Funciones para interactuar con la API ---
 
     async function obtenerTareas() {
         try {
-            const response = await fetch(API_URL);
+            // Usa la ruta relativa directamente
+            const response = await fetch(API_BASE_PATH);
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
             }
@@ -30,7 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(API_URL, {
+            // Usa la ruta relativa directamente
+            const response = await fetch(API_BASE_PATH, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -50,38 +53,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function actualizarEstadoTarea(id, completada) {
-    try {
-        // MUY IMPORTANTE: Asegúrate de que esta línea esté correcta
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ completada }),
-        });
+        try {
+            // Usa la ruta relativa para el ID
+            const response = await fetch(`${API_BASE_PATH}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ completada }),
+            });
 
-        if (!response.ok) {
-            const responseText = await response.text();
-            console.error('Error del servidor (no OK) al actualizar:', response.status, response.statusText, responseText);
-            let errorMessage = `Error HTTP: ${response.status} ${response.statusText}`;
-            try {
-                const errorData = JSON.parse(responseText);
-                errorMessage = errorData.error || errorData.message || responseText;
-            } catch (e) {
-                errorMessage = `Server responded with non-JSON: ${responseText.substring(0, 100)}...`;
+            if (!response.ok) {
+                const responseText = await response.text();
+                console.error('Error del servidor (no OK) al actualizar:', response.status, response.statusText, responseText);
+                let errorMessage = `Error HTTP: ${response.status} ${response.statusText}`;
+                try {
+                    const errorData = JSON.parse(responseText);
+                    errorMessage = errorData.error || errorData.message || responseText;
+                } catch (e) {
+                    errorMessage = `Server responded with non-JSON: ${responseText.substring(0, 100)}...`;
+                }
+                throw new Error(errorMessage);
             }
-            throw new Error(errorMessage);
+
+            obtenerTareas(); // Volver a cargar para reflejar el cambio
+        } catch (error) {
+            console.error('Error al actualizar tarea:', error);
+            alert(`No se pudo actualizar la tarea: ${error.message}`);
         }
-        
-        // Si la respuesta es OK, el backend debería enviar JSON (message: 'Tarea actualizada correctamente')
-        // No necesitamos parsear el JSON si solo refrescamos la lista.
-        // const data = await response.json(); // Opcional, si quisieras usar la respuesta
-        obtenerTareas(); // Volver a cargar para reflejar el cambio
-    } catch (error) {
-        console.error('Error al actualizar tarea:', error);
-        alert(`No se pudo actualizar la tarea: ${error.message}`);
     }
-}
+
     async function eliminarTarea(id) {
         console.log(`[FRONTEND] Intentando eliminar tarea con ID: ${id}`);
 
@@ -94,7 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         try {
-            const response = await fetch(`${API_URL}/${id}`, {
+            // Usa la ruta relativa para el ID
+            const response = await fetch(`${API_BASE_PATH}/${id}`, {
                 method: 'DELETE',
             });
 
@@ -154,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             botonCompletar.classList.add('btn-completar');
             // Los iconos se eligen según el estado actual de la tarea
             botonCompletar.innerHTML = tarea.completada ? '↩️' : '✔️'; // Deshacer : Completar
-            botonCompletar.title = tarea.completada ? 'Marcar como pendiente' : 'Marcar como completada';
+            botonCompletar.title = 'Marcar como pendiente' : 'Marcar como completada';
             botonCompletar.addEventListener('click', () => {
                 actualizarEstadoTarea(tarea.id, !tarea.completada);
             });
