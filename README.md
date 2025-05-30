@@ -28,8 +28,7 @@ Antes de intentar ejecutar esta aplicación, asegúrate de tener instalado lo si
 
 ## 🏃‍♀️ Cómo Ponerlo en Marcha
 
-## Importante!!!
-Docker Desktop tiene que estar en funcionamiento antes de construir y levantar los contenedores docker.
+**¡Importante!** Docker Desktop tiene que estar en funcionamiento antes de construir y levantar los contenedores docker.
 
 Sigue estos pasos para clonar y ejecutar la aplicación en tu máquina local:
 
@@ -37,7 +36,7 @@ Sigue estos pasos para clonar y ejecutar la aplicación en tu máquina local:
     Abre tu terminal (línea de comandos) y ejecuta el siguiente comando para clonar el proyecto. Asegúrate de estar en el directorio donde deseas guardar la aplicación.
 
     ```bash
-    git clone https://github.com/javito72/devops-todo-list-app.git
+    git clone [https://github.com/javito72/devops-todo-list-app.git](https://github.com/javito72/devops-todo-list-app.git)
     ```
 
 2.  **Navega al Directorio del Proyecto:**
@@ -47,7 +46,7 @@ Sigue estos pasos para clonar y ejecutar la aplicación en tu máquina local:
     cd devops-todo-list-app
     ```
 
-3.  **Asegúrate de estar en la rama `main` (o `develop` si fuera el caso inicial):**
+3.  **Asegúrate de estar en la rama `main`:**
     Dado que tu rama principal ahora es `main` y contiene los cambios más recientes, asegúrate de estar en ella:
 
     ```bash
@@ -67,9 +66,8 @@ Sigue estos pasos para clonar y ejecutar la aplicación en tu máquina local:
 5.  **Accede a la Aplicación en tu Navegador:**
     Una vez que los contenedores estén levantados (puede tardar unos segundos para que la base de datos y el servidor Node.js se inicien completamente), abre tu navegador web y ve a la siguiente dirección:
 
-    ```
-    http://localhost:3000
-    ```
+    `http://localhost:3000`
+
     ¡Deberías ver la aplicación de lista de tareas funcionando!
 
 ## 🛑 Detener la Aplicación
@@ -79,19 +77,16 @@ Cuando hayas terminado de usar la aplicación y quieras detener los contenedores
 ```bash
 docker-compose down
 
-Este comando detendrá y eliminará los contenedores, las redes y los volúmenes anónimos creados por docker-compose up.
-
-Si en algún momento deseas eliminar también los datos de la base de datos (volúmenes con nombre), puedes usar:
-
-```bash
-docker-compose down -v
-
-Precaución: Usar -v eliminará permanentemente los datos de tu base de datos MySQL, ¡así que úsalo solo si quieres empezar con una base de datos completamente limpia!
 
 
-## DEPLOY
-Base de datos en Aiven
+☁️ Despliegue de la Aplicación
+La aplicación Lista de Tareas (Todo List App) está desplegada en la nube utilizando las siguientes plataformas:
 
-Aplicación Web en Render:
-https://devops-todo-list-app.onrender.com/
+Servicio de Base de Datos: Aiven (MySQL)
+La base de datos MySQL está gestionada y alojada en Aiven, proporcionando un entorno robusto y escalable para los datos de la aplicación.
 
+Aplicación Web (Frontend y API Backend): Render
+El frontend (interfaz de usuario) y la API de backend (Node.js/Express) están alojados como un único servicio web en Render.
+
+Acceso a la Aplicación: https://devops-todo-list-app.onrender.com/
+---
