@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error al obtener tareas:', error);
             alert('No se pudieron cargar las tareas. Revisa la consola para más detalles.');
+        _
         }
     }
 
@@ -156,7 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
             botonCompletar.classList.add('btn-completar');
             // Los iconos se eligen según el estado actual de la tarea
             botonCompletar.innerHTML = tarea.completada ? '↩️' : '✔️'; // Deshacer : Completar
-            botonCompletar.title = 'Marcar como pendiente' : 'Marcar como completada';
+            // >>>>>>>>>> CORRECCIÓN AQUÍ <<<<<<<<<<
+            botonCompletar.title = tarea.completada ? 'Marcar como pendiente' : 'Marcar como completada';
+            // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             botonCompletar.addEventListener('click', () => {
                 actualizarEstadoTarea(tarea.id, !tarea.completada);
             });
