@@ -12,7 +12,7 @@ app.use(express.static('public'));
 
 // Configuración de la conexión a MySQL usando variables de entorno
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || 'mysql_db',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'lista_tareas_db',
