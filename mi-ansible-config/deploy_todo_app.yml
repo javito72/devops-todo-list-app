@@ -1,0 +1,79 @@
+# deploy_todo_app.yml
+- name: Configurar servidor y desplegar To-Do App Dockerizada
+  hosts: servidor_tareas # Debe coincidir con el grupo en inventory.ini
+  become: yes
+  become_method: sudo
+  become_user: root
+
+  tasks:
+    - name: Actualizar cache de apt (para sistemas Debian/Ubuntu)
+      apt:
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+    - name: Instalar paquetes necesarios para Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Añadir la GPG key oficial de Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg # O la URL para Debian si es diferente
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Configurar el repositorio de Docker
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable" # Ajusta para Debian si es necesario
+        state: present
+        filename: docker
+      when: ansible_os_family == 'Debian'
+
+    - name: Instalar Docker Engine
+      apt:
+        name: docker-ce # Docker Community Edition
+        state: present
+        update_cache: yes # Actualiza cache después de añadir repo
+      when: ansible_os_family == 'Debian'
+      notify: Iniciar Docker # Llama al handler si esta tarea realiza cambios
+
+    - name: Asegurar que el servicio Docker esté iniciado y habilitado
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: (Opcional) Añadir usuario al grupo docker para ejecutar docker sin sudo
+      user:
+        name: "{{ ansible_user }}" # El usuario con el que Ansible se conecta
+        groups: docker
+        append: yes
+      # Nota: El usuario necesitará re-loguearse para que este cambio de grupo tenga efecto.
+
+    - name: (Opcional) Desplegar el contenedor de la To-Do App desde Docker Hub
+      docker_container:
+        name: todo-app-container
+        image: tu_usuario_dockerhub/devops-todo-app:latest # CAMBIA ESTO
+        state: started # Asegura que esté corriendo, lo reinicia si es necesario y la imagen cambió
+        restart_policy: always # Reiniciar el contenedor si se detiene o el servidor se reinicia
+        ports:
+          - "3000:3000" # Puerto del host:puerto del contenedor
+        env:
+          DB_HOST: "la_ip_o_hostname_de_tu_db_externa" # CAMBIA ESTO
+          DB_USER: "usuario_db" # CAMBIA ESTO
+          DB_PASSWORD: "password_db" # CAMBIA ESTO
+          DB_NAME: "lista_tareas_db" # CAMBIA ESTO
+          NODE_ENV: "production"
+
+  handlers: # Los handlers solo se ejecutan si una tarea que los notifica realiza un cambio
+    - name: Iniciar Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
