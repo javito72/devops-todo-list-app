@@ -20,8 +20,8 @@ services:
 
   mysql_db:
     image: mysql:8.0
-    # ports:
-      # - "3307:3306"
+    ports:
+      - "3307:3306"
     environment:
       # Las contraseñas de MySQL ahora se toman del entorno del host
       # (o de GitHub Actions cuando corra el workflow)
