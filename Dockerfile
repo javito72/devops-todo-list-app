@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 3000
 
 # Comando para ejecutar la aplicación
-CMD [ "node", "--require", "./tracing.js", "server.js" ]
+CMD [ "node", "server.js" ]
